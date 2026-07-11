@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   LayoutDashboard, User, BookOpen, ClipboardCheck, GraduationCap,
@@ -24,6 +24,7 @@ const nav = [
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { pathname } = useLocation();
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -93,7 +94,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => setLogoutOpen(false)}>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setLogoutOpen(false); navigate({ to: "/login" }); }}
+            >
               Logout
             </AlertDialogAction>
           </AlertDialogFooter>
