@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TeacherRouteImport } from './routes/teacher'
+import { Route as StudentRouteImport } from './routes/student'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HodRouteImport } from './routes/hod'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as HodIndexRouteImport } from './routes/hod.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TeacherReportsRouteImport } from './routes/teacher.reports'
@@ -52,6 +54,11 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentRoute = StudentRouteImport.update({
+  id: '/student',
+  path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -71,6 +78,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const StudentIndexRoute = StudentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentRoute,
 } as any)
 const HodIndexRoute = HodIndexRouteImport.update({
   id: '/',
@@ -239,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/hod': typeof HodRouteWithChildren
   '/login': typeof LoginRoute
+  '/student': typeof StudentRouteWithChildren
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hods': typeof AdminHodsRoute
@@ -270,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/teacher/reports': typeof TeacherReportsRoute
   '/admin/': typeof AdminIndexRoute
   '/hod/': typeof HodIndexRoute
+  '/student/': typeof StudentIndexRoute
   '/teacher/attendance/$courseId': typeof TeacherAttendanceCourseIdRoute
   '/teacher/attendance/': typeof TeacherAttendanceIndexRoute
 }
@@ -307,6 +321,7 @@ export interface FileRoutesByTo {
   '/teacher/reports': typeof TeacherReportsRoute
   '/admin': typeof AdminIndexRoute
   '/hod': typeof HodIndexRoute
+  '/student': typeof StudentIndexRoute
   '/teacher/attendance/$courseId': typeof TeacherAttendanceCourseIdRoute
   '/teacher/attendance': typeof TeacherAttendanceIndexRoute
 }
@@ -316,6 +331,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/hod': typeof HodRouteWithChildren
   '/login': typeof LoginRoute
+  '/student': typeof StudentRouteWithChildren
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hods': typeof AdminHodsRoute
@@ -347,6 +363,7 @@ export interface FileRoutesById {
   '/teacher/reports': typeof TeacherReportsRoute
   '/admin/': typeof AdminIndexRoute
   '/hod/': typeof HodIndexRoute
+  '/student/': typeof StudentIndexRoute
   '/teacher/attendance/$courseId': typeof TeacherAttendanceCourseIdRoute
   '/teacher/attendance/': typeof TeacherAttendanceIndexRoute
 }
@@ -357,6 +374,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hod'
     | '/login'
+    | '/student'
     | '/teacher'
     | '/admin/dashboard'
     | '/admin/hods'
@@ -388,6 +406,7 @@ export interface FileRouteTypes {
     | '/teacher/reports'
     | '/admin/'
     | '/hod/'
+    | '/student/'
     | '/teacher/attendance/$courseId'
     | '/teacher/attendance/'
   fileRoutesByTo: FileRoutesByTo
@@ -425,6 +444,7 @@ export interface FileRouteTypes {
     | '/teacher/reports'
     | '/admin'
     | '/hod'
+    | '/student'
     | '/teacher/attendance/$courseId'
     | '/teacher/attendance'
   id:
@@ -433,6 +453,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hod'
     | '/login'
+    | '/student'
     | '/teacher'
     | '/admin/dashboard'
     | '/admin/hods'
@@ -464,6 +485,7 @@ export interface FileRouteTypes {
     | '/teacher/reports'
     | '/admin/'
     | '/hod/'
+    | '/student/'
     | '/teacher/attendance/$courseId'
     | '/teacher/attendance/'
   fileRoutesById: FileRoutesById
@@ -473,6 +495,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   HodRoute: typeof HodRouteWithChildren
   LoginRoute: typeof LoginRoute
+  StudentRoute: typeof StudentRouteWithChildren
   TeacherRoute: typeof TeacherRouteWithChildren
 }
 
@@ -483,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/teacher'
       fullPath: '/teacher'
       preLoaderRoute: typeof TeacherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/student': {
+      id: '/student'
+      path: '/student'
+      fullPath: '/student'
+      preLoaderRoute: typeof StudentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -512,6 +542,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/student/': {
+      id: '/student/'
+      path: '/'
+      fullPath: '/student/'
+      preLoaderRoute: typeof StudentIndexRouteImport
+      parentRoute: typeof StudentRoute
     }
     '/hod/': {
       id: '/hod/'
@@ -802,6 +839,17 @@ const HodRouteChildren: HodRouteChildren = {
 
 const HodRouteWithChildren = HodRoute._addFileChildren(HodRouteChildren)
 
+interface StudentRouteChildren {
+  StudentIndexRoute: typeof StudentIndexRoute
+}
+
+const StudentRouteChildren: StudentRouteChildren = {
+  StudentIndexRoute: StudentIndexRoute,
+}
+
+const StudentRouteWithChildren =
+  StudentRoute._addFileChildren(StudentRouteChildren)
+
 interface TeacherRouteChildren {
   TeacherCoursesRoute: typeof TeacherCoursesRoute
   TeacherDashboardRoute: typeof TeacherDashboardRoute
@@ -834,6 +882,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   HodRoute: HodRouteWithChildren,
   LoginRoute: LoginRoute,
+  StudentRoute: StudentRouteWithChildren,
   TeacherRoute: TeacherRouteWithChildren,
 }
 export const routeTree = rootRouteImport
