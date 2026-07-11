@@ -51,7 +51,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             Teacher Workspace
           </div>
           {nav.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to || (to !== "/dashboard" && pathname.startsWith(to));
+            const active = pathname === to || (to !== "/teacher/dashboard" && pathname.startsWith(to));
             return (
               <Link
                 key={to}
