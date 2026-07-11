@@ -7,9 +7,11 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { superAdmin } from "@/lib/superadmin-mock-data";
+import { useNavigate } from "@tanstack/react-router";
 
 export function SaTopbar({ onMenu }: { onMenu: () => void }) {
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-30 glass">
       <div className="flex h-16 items-center gap-3 px-4 md:px-6">
