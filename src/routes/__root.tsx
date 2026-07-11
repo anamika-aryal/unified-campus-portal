@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider as StudentThemeProvider } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -71,10 +72,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Teacher Dashboard — Student Management System" },
-      { name: "description", content: "Premium teacher dashboard for managing courses, attendance, assignments, marks and student performance." },
-      { property: "og:title", content: "Teacher Dashboard — SMS" },
-      { property: "og:description", content: "Manage courses, attendance, assignments and analytics." },
+      { title: "Smart Student Management System" },
+      { name: "description", content: "Intelligent academic platform for students, teachers, HODs and administrators." },
+      { property: "og:title", content: "Smart Student Management System" },
+      { property: "og:description", content: "Intelligent academic platform for students, teachers, HODs and administrators." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -112,8 +113,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <Outlet />
-        <Toaster position="top-right" richColors />
+        <StudentThemeProvider>
+          <Outlet />
+          <Toaster position="top-right" richColors />
+        </StudentThemeProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
