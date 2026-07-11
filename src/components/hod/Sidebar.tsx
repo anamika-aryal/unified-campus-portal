@@ -17,6 +17,7 @@ const nav = [
 ] as const;
 
 export function HodSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate();
   const { pathname } = useLocation();
 
   return (

@@ -13,6 +13,7 @@ const nav = [
 ] as const;
 
 export function SaSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate();
   const { pathname } = useLocation();
   return (
     <>
