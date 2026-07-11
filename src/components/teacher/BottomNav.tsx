@@ -3,11 +3,11 @@ import { LayoutDashboard, BookOpen, ClipboardCheck, BarChart3, Bell } from "luci
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/courses", label: "Courses", icon: BookOpen },
-  { to: "/attendance", label: "Attend", icon: ClipboardCheck },
-  { to: "/performance", label: "Stats", icon: BarChart3 },
-  { to: "/notices", label: "Notices", icon: Bell },
+  { to: "/teacher/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/teacher/courses", label: "Courses", icon: BookOpen },
+  { to: "/teacher/attendance", label: "Attend", icon: ClipboardCheck },
+  { to: "/teacher/performance", label: "Stats", icon: BarChart3 },
+  { to: "/teacher/notices", label: "Notices", icon: Bell },
 ] as const;
 
 export function BottomNav() {

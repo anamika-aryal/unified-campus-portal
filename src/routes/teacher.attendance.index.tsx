@@ -7,7 +7,7 @@ import { Camera, ArrowRight } from "lucide-react";
 import { coursesFor } from "@/lib/mock-data";
 import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
 
-export const Route = createFileRoute("/_app/attendance/")({
+export const Route = createFileRoute("/teacher/attendance/")({
   head: () => ({ meta: [{ title: "Attendance · Teacher Portal" }] }),
   component: AttendanceIndex,
 });
@@ -51,7 +51,7 @@ function AttendanceIndex() {
                       <div><div className="text-muted-foreground">Students</div><div className="font-semibold">{c.enrolled}</div></div>
                       <div><div className="text-muted-foreground">Att %</div><div className="font-semibold text-primary">{c.attendance}%</div></div>
                     </div>
-                    <Link to="/attendance/$courseId" params={{ courseId: c.id }}>
+                    <Link to="/teacher/attendance/$courseId" params={{ courseId: c.id }}>
                       <Button className="w-full rounded-xl">
                         <Camera className="mr-2 h-4 w-4" /> Take Attendance
                         <ArrowRight className="ml-auto h-4 w-4" />

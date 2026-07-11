@@ -32,7 +32,7 @@ export function LogoutButton({ className, iconOnly = false }: { className?: stri
           <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/login" })}
           >
             Logout
           </AlertDialogAction>

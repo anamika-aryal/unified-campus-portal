@@ -12,7 +12,7 @@ import {
 import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
 import { StatCard } from "@/components/StatCard";
 
-export const Route = createFileRoute("/_app/performance")({
+export const Route = createFileRoute("/teacher/performance")({
   head: () => ({ meta: [{ title: "Performance · Teacher Portal" }] }),
   component: PerformancePage,
 });

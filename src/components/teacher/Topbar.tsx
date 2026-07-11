@@ -45,7 +45,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
               <DropdownMenuLabel>{teacher.title} {teacher.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/profile"><User className="mr-2 h-4 w-4" /> My Profile</Link>
+                <Link to="/teacher/profile"><User className="mr-2 h-4 w-4" /> My Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="text-destructive focus:text-destructive">

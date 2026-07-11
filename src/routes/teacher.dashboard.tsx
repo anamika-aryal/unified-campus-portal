@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/StatCard";
 import { teacher, courses, activities } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/_app/dashboard")({
+export const Route = createFileRoute("/teacher/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Teacher Portal" }] }),
   component: Dashboard,
 });
@@ -47,11 +47,11 @@ function Dashboard() {
         <CardHeader className="pb-3"><CardTitle className="text-base">Quick Actions</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           {[
-            { icon: Camera, label: "Take Attendance", to: "/attendance" },
-            { icon: Bell, label: "View Notice", to: "/notices" },
-            { icon: PenSquare, label: "Enter Marks", to: "/marks" },
-            { icon: Eye, label: "View Students", to: "/courses" },
-            { icon: FileBarChart, label: "Generate Report", to: "/reports" },
+            { icon: Camera, label: "Take Attendance", to: "/teacher/attendance" },
+            { icon: Bell, label: "View Notice", to: "/teacher/notices" },
+            { icon: PenSquare, label: "Enter Marks", to: "/teacher/marks" },
+            { icon: Eye, label: "View Students", to: "/teacher/courses" },
+            { icon: FileBarChart, label: "Generate Report", to: "/teacher/reports" },
           ].map((a) => (
             <Link key={a.label} to={a.to} className="group flex items-center gap-3 rounded-xl border border-border bg-background/50 p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-background hover:shadow-soft">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl gradient-brand text-white shadow-soft">

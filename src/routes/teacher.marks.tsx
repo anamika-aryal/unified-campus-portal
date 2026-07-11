@@ -22,7 +22,7 @@ import {
 import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/marks")({
+export const Route = createFileRoute("/teacher/marks")({
   head: () => ({ meta: [{ title: "Internal Marks · Teacher Portal" }] }),
   component: MarksPage,
 });

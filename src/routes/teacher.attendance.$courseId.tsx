@@ -17,7 +17,7 @@ import { courses, studentsFor } from "@/lib/mock-data";
 
 type Status = "present" | "absent" | "pending";
 
-export const Route = createFileRoute("/_app/attendance/$courseId")({
+export const Route = createFileRoute("/teacher/attendance/$courseId")({
   head: () => ({ meta: [{ title: "Take Attendance · Teacher Portal" }] }),
   component: TakeAttendance,
 });
@@ -116,7 +116,7 @@ function TakeAttendance() {
       {/* Header */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Link to="/attendance"><Button size="icon" variant="ghost" className="rounded-xl"><ArrowLeft className="h-4 w-4" /></Button></Link>
+          <Link to="/teacher/attendance"><Button size="icon" variant="ghost" className="rounded-xl"><ArrowLeft className="h-4 w-4" /></Button></Link>
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{course.code}</div>
             <h1 className="truncate font-display text-xl font-bold sm:text-2xl">{course.name} · Attendance</h1>

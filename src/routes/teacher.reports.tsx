@@ -9,7 +9,7 @@ import { FileBarChart, Download, FileSpreadsheet, CheckCircle2, Loader2 } from "
 import { coursesFor, studentsFor, internalTotal, defaultMarksEntry, TOTAL_INTERNAL_MAX, type Course } from "@/lib/mock-data";
 import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
 
-export const Route = createFileRoute("/_app/reports")({
+export const Route = createFileRoute("/teacher/reports")({
   head: () => ({ meta: [{ title: "Reports · Teacher Portal" }] }),
   component: ReportsPage,
 });

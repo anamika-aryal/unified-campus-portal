@@ -14,7 +14,7 @@ import { teacher, courses } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/profile")({
+export const Route = createFileRoute("/teacher/profile")({
   head: () => ({ meta: [{ title: "My Profile · Teacher Portal" }] }),
   component: Profile,
 });

@@ -11,7 +11,7 @@ import { coursesFor } from "@/lib/mock-data";
 import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
 import type { Course } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/_app/courses")({
+export const Route = createFileRoute("/teacher/courses")({
   head: () => ({ meta: [{ title: "My Courses · Teacher Portal" }] }),
   component: CoursesPage,
 });

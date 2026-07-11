@@ -10,7 +10,7 @@ import {
 import { Bell, Search, Paperclip, CalendarDays, Eye } from "lucide-react";
 import { notices } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/_app/notices")({
+export const Route = createFileRoute("/teacher/notices")({
   head: () => ({ meta: [{ title: "Notices · Teacher Portal" }] }),
   component: NoticesPage,
 });

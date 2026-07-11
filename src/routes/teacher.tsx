@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { BottomNav } from "@/components/layout/BottomNav";
 
-export const Route = createFileRoute("/_app")({
+export const Route = createFileRoute("/teacher")({
   component: AppLayout,
 });
 
