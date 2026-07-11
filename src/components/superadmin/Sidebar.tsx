@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, ShieldCheck, Users, GraduationCap, User, LogOut, X,
 } from "lucide-react";
@@ -64,7 +64,7 @@ export function SaSidebar({ open, onClose }: { open: boolean; onClose: () => voi
             );
           })}
           <div className="mt-auto pt-2">
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive/90 hover:bg-destructive/10">
+            <button onClick={() => navigate({ to: "/login" })} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive/90 hover:bg-destructive/10">
               <LogOut className="h-[18px] w-[18px]" /> Logout
             </button>
           </div>

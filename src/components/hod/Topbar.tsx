@@ -59,7 +59,7 @@ export function HodTopbar({ onMenu }: { onMenu: () => void }) {
                 <KeyRound className="mr-2 h-4 w-4" /> Change Password
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive"><LogOut className="mr-2 h-4 w-4" /> Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/login" })} className="text-destructive"><LogOut className="mr-2 h-4 w-4" /> Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

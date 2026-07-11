@@ -50,7 +50,7 @@ export function SaTopbar({ onMenu }: { onMenu: () => void }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem><User className="mr-2 h-4 w-4" /> My Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive"><LogOut className="mr-2 h-4 w-4" /> Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/login" })} className="text-destructive"><LogOut className="mr-2 h-4 w-4" /> Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
