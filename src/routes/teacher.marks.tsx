@@ -3,131 +3,144 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PenSquare, Save, Send, CheckCircle2 } from "lucide-react";
-import {
-  coursesFor, studentsFor, practicalComponents, theoryComponents,
-  PRACTICAL_MAX, THEORY_MAX, TOTAL_INTERNAL_MAX,
-  defaultMarksEntry, practicalTotal, theoryTotal, internalTotal,
-  type MarksEntry, type Course,
-} from "@/lib/mock-data";
-import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
-import { cn } from "@/lib/utils";
+import { Save, Send, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { getAssignedCourses, getRosterFor, deptName, sectionLabel } from "@/lib/academic-data";
+import { DepartmentPicker, SemesterPicker, SectionPicker, DrillBreadcrumb, type DrillState } from "@/components/DrillNav";
 
 export const Route = createFileRoute("/teacher/marks")({
   head: () => ({ meta: [{ title: "Internal Marks · Teacher Portal" }] }),
   component: MarksPage,
 });
 
-type Roster = Record<string, MarksEntry>;
-type PublishState = "draft" | "published";
+const PRACTICAL = [
+  { key: "pAtt", label: "Attendance & Participation", weight: "10%", max: 2 },
+  { key: "pLab", label: "Lab / Project Report", weight: "20%", max: 4 },
+  { key: "pExam", label: "Practical Exam / Project Work", weight: "40%", max: 8 },
+  { key: "pViva", label: "Viva", weight: "30%", max: 6 },
+] as const;
+
+const THEORY = [
+  { key: "tAtt", label: "Attendance & Participation", weight: "10%", max: 3 },
+  { key: "tAssign", label: "Assignment", weight: "20%", max: 6 },
+  { key: "tPresent", label: "Presentation", weight: "10%", max: 3 },
+  { key: "tAssess", label: "Internal Assessment", weight: "60%", max: 18 },
+] as const;
+
+const ALL_FIELDS = [...PRACTICAL, ...THEORY];
+
+function seedValue(max: number, i: number) {
+  return Math.round(max * (0.6 + ((i * 7) % 30) / 100));
+}
 
 function MarksPage() {
-  const [drill, setDrill] = useState<DrillState>({ dept: null, sem: null, section: null });
-  const [course, setCourse] = useState<Course | null>(null);
-
-  const done = drill.dept && drill.sem !== null && drill.section;
-  const assigned = done ? coursesFor(drill.dept!, drill.sem!, drill.section!) : [];
-
-  if (course) {
-    return <MarksEntryScreen course={course} onBack={() => setCourse(null)} />;
-  }
+  const [state, setState] = useState<DrillState>({});
+  const [courseId, setCourseId] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Internal Marks</h1>
-        <p className="text-sm text-muted-foreground">Select a department, semester and section, then choose a course to enter marks.</p>
+        <p className="text-sm text-muted-foreground">Select a department, semester, section and course to enter marks. Maximum 50 marks per student.</p>
       </div>
 
-      <DrillDown value={drill} onChange={setDrill} />
-
-      {done && (
+      {!courseId && (
         <>
-          <BackToDrillDown label="Change Section" onClick={() => setDrill((d) => ({ ...d, section: null }))} />
-          {assigned.length === 0 ? (
-            <Card className="rounded-2xl p-8 text-center shadow-soft">
-              <p className="text-sm text-muted-foreground">No courses assigned to this section.</p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {assigned.map((c) => (
-                <Card key={c.id} className="group overflow-hidden rounded-2xl border-border/60 p-0 shadow-soft transition hover:-translate-y-1 hover:shadow-glass">
-                  <div className="gradient-brand relative h-20 p-4 text-white">
-                    <div className="text-[10px] uppercase tracking-widest opacity-80">{c.code}</div>
-                    <div className="mt-1 font-display text-lg font-bold">{c.name}</div>
-                  </div>
-                  <CardContent className="p-5">
-                    <Button className="w-full rounded-xl" onClick={() => setCourse(c)}>
-                      <PenSquare className="mr-1.5 h-4 w-4" /> Enter Marks
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          <DrillBreadcrumb state={state} onNavigate={setState} />
+          {!state.dept && <DepartmentPicker onSelect={(dept) => setState({ dept })} />}
+          {state.dept && !state.sem && <SemesterPicker onSelect={(sem) => setState({ dept: state.dept, sem })} />}
+          {state.dept && state.sem && !state.section && (
+            <SectionPicker onSelect={(section) => setState({ ...state, section })} />
+          )}
+          {state.dept && state.sem && state.section && (
+            <CourseList dept={state.dept} sem={state.sem} section={state.section} onSelect={setCourseId} />
           )}
         </>
       )}
+
+      {courseId && <StudentMarks courseId={courseId} onBack={() => setCourseId(null)} />}
     </div>
   );
 }
 
-function MarksEntryScreen({ course, onBack }: { course: Course; onBack: () => void }) {
-  const roster = useMemo(() => studentsFor(course.id, 12), [course.id]);
-  const [entries, setEntries] = useState<Roster>(() =>
-    Object.fromEntries(roster.map((s) => [s.id, defaultMarksEntry()])),
+function CourseList({ dept, sem, section, onSelect }: { dept: string; sem: number; section: string; onSelect: (id: string) => void }) {
+  const list = getAssignedCourses(dept, sem, section);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary" className="rounded-full">{deptName(dept)}</Badge>
+        <Badge variant="secondary" className="rounded-full">Semester {sem}</Badge>
+        <Badge variant="secondary" className="rounded-full">Section {sectionLabel(section)}</Badge>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {list.map((c) => (
+          <Card
+            key={c.id}
+            onClick={() => onSelect(c.id)}
+            className="group cursor-pointer overflow-hidden rounded-2xl border-border/60 p-0 shadow-soft transition hover:-translate-y-1 hover:shadow-glass"
+          >
+            <div className="gradient-brand relative h-20 p-4 text-white">
+              <div className="text-[10px] uppercase tracking-widest opacity-80">{c.code}</div>
+              <div className="mt-1 font-display text-base font-bold">{c.name}</div>
+            </div>
+            <CardContent className="flex items-center justify-between p-4 text-sm">
+              <span className="text-xs text-muted-foreground">{c.enrolled} students</span>
+              <span className="text-xs font-medium text-primary">Enter marks →</span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
-  const [status, setStatus] = useState<PublishState>("draft");
-  const [editingStudent, setEditingStudent] = useState<string | null>(null);
-  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
-  const [publishedSuccess, setPublishedSuccess] = useState(false);
-  const [draftSavedSuccess, setDraftSavedSuccess] = useState(false);
+}
 
-  function updateEntry(studentId: string, next: MarksEntry) {
-    setEntries((e) => ({ ...e, [studentId]: next }));
-  }
+function StudentMarks({ courseId, onBack }: { courseId: string; onBack: () => void }) {
+  const [dept, semStr, section] = courseId.split("-");
+  const sem = Number(semStr);
+  const course = getAssignedCourses(dept, sem, section).find((c) => c.id === courseId);
+  const roster = useMemo(() => getRosterFor(dept, sem, section), [dept, sem, section]);
 
-  function saveDraft() {
-    setStatus("draft");
-    setDraftSavedSuccess(true);
-  }
+  const [rows, setRows] = useState(() =>
+    roster.map((s, i) => {
+      const rec: Record<string, number> = {};
+      ALL_FIELDS.forEach((f) => { rec[f.key] = seedValue(f.max, i); });
+      return { ...s, ...rec };
+    }),
+  );
+  const [publishOpen, setPublishOpen] = useState(false);
+
+  const update = (id: string, field: string, max: number, val: number) => {
+    const clamped = Math.max(0, Math.min(max, val));
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, [field]: clamped } : x)));
+  };
 
   function publish() {
-    setStatus("published");
-    setPublishConfirmOpen(false);
-    setPublishedSuccess(true);
+    setPublishOpen(false);
+    toast.success("Marks Published Successfully");
   }
 
-  const student = editingStudent ? roster.find((s) => s.id === editingStudent) ?? null : null;
+  if (!course) return <p className="text-sm text-muted-foreground">Course not found.</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <BackToDrillDown label="Back" onClick={onBack} />
+          <Button size="icon" variant="ghost" className="rounded-xl" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
           <div>
-            <h1 className="font-display text-2xl font-bold">{course.name} · Internal Marks</h1>
-            <p className="text-sm text-muted-foreground">
-              {course.code} · Practical ({PRACTICAL_MAX}) + Theory ({THEORY_MAX}) = {TOTAL_INTERNAL_MAX} marks total.
-            </p>
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{course.code}</div>
+            <h2 className="font-display text-xl font-bold">{course.name} · Internal Marks</h2>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={cn("rounded-full", status === "published" ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" : "bg-secondary text-foreground")}>
-            {status === "published" ? "Published" : "Draft"}
-          </Badge>
-          <Button variant="outline" className="rounded-xl" onClick={saveDraft}>
+        <div className="flex gap-2">
+          <Button variant="outline" className="rounded-xl" onClick={() => toast.success("Draft Saved Successfully")}>
             <Save className="mr-1.5 h-4 w-4" />Save Draft
           </Button>
-          <Button className="rounded-xl" onClick={() => setPublishConfirmOpen(true)}>
+          <Button className="rounded-xl" onClick={() => setPublishOpen(true)}>
             <Send className="mr-1.5 h-4 w-4" />Publish
           </Button>
         </div>
@@ -135,45 +148,54 @@ function MarksEntryScreen({ course, onBack }: { course: Course; onBack: () => vo
 
       <Card className="rounded-2xl shadow-soft">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">
-            Practical {PRACTICAL_MAX} marks · Theory {THEORY_MAX} marks · Total {TOTAL_INTERNAL_MAX} marks
-          </CardTitle>
+          <CardTitle className="text-base">Practical (20) · Theory (30) · Total (50)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr className="[&>th]:px-4 [&>th]:py-3 [&>th]:text-left">
-                  <th>Student</th>
-                  <th>Practical /{PRACTICAL_MAX}</th>
-                  <th>Theory /{THEORY_MAX}</th>
-                  <th>Total /{TOTAL_INTERNAL_MAX}</th>
-                  <th />
+              <thead className="bg-secondary/60 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr className="[&>th]:px-3 [&>th]:py-3 [&>th]:text-left">
+                  <th rowSpan={2} className="align-bottom">Student</th>
+                  <th colSpan={4} className="text-center">Practical (20)</th>
+                  <th colSpan={4} className="text-center">Theory (30)</th>
+                  <th rowSpan={2} className="align-bottom text-center">Practical<br/>Total</th>
+                  <th rowSpan={2} className="align-bottom text-center">Theory<br/>Total</th>
+                  <th rowSpan={2} className="align-bottom text-center">Final /50</th>
+                </tr>
+                <tr className="[&>th]:px-2 [&>th]:pb-2 [&>th]:text-center">
+                  {PRACTICAL.map((f) => <th key={f.key} title={f.label}>{f.max}</th>)}
+                  {THEORY.map((f) => <th key={f.key} title={f.label}>{f.max}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {roster.map((s) => {
-                  const entry = entries[s.id];
-                  const p = practicalTotal(entry);
-                  const t = theoryTotal(entry);
-                  const total = internalTotal(entry);
+                {rows.map((s) => {
+                  const practicalTotal = PRACTICAL.reduce((sum, f) => sum + (s as any)[f.key], 0);
+                  const theoryTotal = THEORY.reduce((sum, f) => sum + (s as any)[f.key], 0);
+                  const final = practicalTotal + theoryTotal;
                   return (
-                    <tr key={s.id} className="[&>td]:px-4 [&>td]:py-2.5">
-                      <td>
+                    <tr key={s.id} className="[&>td]:px-2 [&>td]:py-2">
+                      <td className="px-3">
                         <div className="text-sm font-semibold">{s.name}</div>
                         <div className="text-xs text-muted-foreground">{s.enrollment}</div>
                       </td>
-                      <td><span className="font-mono text-sm">{p.toFixed(1)}</span></td>
-                      <td><span className="font-mono text-sm">{t.toFixed(1)}</span></td>
-                      <td>
+                      {ALL_FIELDS.map((f) => (
+                        <td key={f.key}>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={f.max}
+                            value={(s as any)[f.key]}
+                            onChange={(e) => update(s.id, f.key, f.max, +e.target.value)}
+                            className="h-9 w-14 rounded-lg text-center"
+                          />
+                        </td>
+                      ))}
+                      <td className="text-center font-mono text-sm font-semibold">{practicalTotal}</td>
+                      <td className="text-center font-mono text-sm font-semibold">{theoryTotal}</td>
+                      <td className="text-center">
                         <span className="rounded-lg bg-primary/10 px-3 py-1 font-mono text-sm font-bold text-primary">
-                          {total.toFixed(1)}
+                          {final}
                         </span>
-                      </td>
-                      <td className="text-right">
-                        <Button size="sm" variant="outline" className="rounded-lg" onClick={() => setEditingStudent(s.id)}>
-                          <PenSquare className="mr-1.5 h-3.5 w-3.5" />Enter Marks
-                        </Button>
                       </td>
                     </tr>
                   );
@@ -184,154 +206,20 @@ function MarksEntryScreen({ course, onBack }: { course: Course; onBack: () => vo
         </CardContent>
       </Card>
 
-      {student && (
-        <MarksEntryDialog
-          open={!!student}
-          onOpenChange={(v) => !v && setEditingStudent(null)}
-          student={student}
-          entry={entries[student.id]}
-          onSave={(next) => { updateEntry(student.id, next); setEditingStudent(null); }}
-        />
-      )}
-
-      {/* Publish confirmation */}
-      <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
-        <AlertDialogContent className="rounded-2xl">
+      <AlertDialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Publish Internal Marks?</AlertDialogTitle>
             <AlertDialogDescription>
-              Once published, marks for {course.name} become visible to all {roster.length} students. You can still make edits afterwards, but students will see the update.
+              Once published, marks for {course.name} will be visible to students. You can still edit drafts before publishing.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-xl" onClick={publish}>Yes, Publish</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={publish}>Yes, Publish</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Draft saved success */}
-      <Dialog open={draftSavedSuccess} onOpenChange={setDraftSavedSuccess}>
-        <DialogContent className="max-w-sm rounded-2xl text-center">
-          <DialogHeader className="items-center">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <DialogTitle>Draft Saved Successfully</DialogTitle>
-            <DialogDescription>Your changes for {course.name} have been stored as a draft.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button className="rounded-xl" onClick={() => setDraftSavedSuccess(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Published success */}
-      <Dialog open={publishedSuccess} onOpenChange={setPublishedSuccess}>
-        <DialogContent className="max-w-sm rounded-2xl text-center">
-          <DialogHeader className="items-center">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <DialogTitle>Marks Published Successfully</DialogTitle>
-            <DialogDescription>Internal marks for {course.name} are now visible to students.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button className="rounded-xl" onClick={() => setPublishedSuccess(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function MarksEntryDialog({
-  open, onOpenChange, student, entry, onSave,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  student: { id: string; name: string; enrollment: string };
-  entry: MarksEntry;
-  onSave: (entry: MarksEntry) => void;
-}) {
-  const [form, setForm] = useState<MarksEntry>(entry);
-
-  function update(key: string, max: number, raw: string) {
-    const val = Math.max(0, Math.min(max, Number(raw) || 0));
-    setForm((f) => ({ ...f, [key]: val }));
-  }
-
-  const p = practicalTotal(form);
-  const t = theoryTotal(form);
-  const total = p + t;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl">
-        <DialogHeader>
-          <DialogTitle>{student.name}</DialogTitle>
-          <DialogDescription>{student.enrollment} · Enter component-wise internal marks.</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5 py-2">
-          <ComponentGroup title={`Practical (${PRACTICAL_MAX})`} components={practicalComponents} form={form} onChange={update} />
-          <ComponentGroup title={`Theory (${THEORY_MAX})`} components={theoryComponents} form={form} onChange={update} />
-
-          <div className="grid grid-cols-3 gap-3 rounded-xl bg-secondary/60 p-3 text-center">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Practical</div>
-              <div className="font-display text-lg font-bold">{p.toFixed(1)}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Theory</div>
-              <div className="font-display text-lg font-bold">{t.toFixed(1)}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Total /{TOTAL_INTERNAL_MAX}</div>
-              <div className="font-display text-lg font-bold text-primary">{total.toFixed(1)}</div>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="rounded-xl" onClick={() => onSave(form)}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ComponentGroup({
-  title, components, form, onChange,
-}: {
-  title: string;
-  components: readonly { key: string; label: string; weightPct: number; max: number }[];
-  form: MarksEntry;
-  onChange: (key: string, max: number, raw: string) => void;
-}) {
-  return (
-    <div>
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</div>
-      <div className="space-y-2.5">
-        {components.map((c) => (
-          <div key={c.key} className="flex items-center gap-3">
-            <Label htmlFor={c.key} className="flex-1 text-sm font-normal">
-              {c.label} <span className="text-xs text-muted-foreground">({c.weightPct}% · max {c.max})</span>
-            </Label>
-            <Input
-              id={c.key}
-              type="number"
-              min={0}
-              max={c.max}
-              step={0.5}
-              value={form[c.key] ?? 0}
-              onChange={(e) => onChange(c.key, c.max, e.target.value)}
-              className="h-9 w-20 rounded-lg text-center"
-            />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

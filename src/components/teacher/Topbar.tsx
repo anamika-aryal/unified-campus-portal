@@ -1,17 +1,23 @@
-import { Search, Sun, Moon, Menu, User } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Search, Sun, Moon, Menu, LogOut, User } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
+import { useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogoutButton } from "@/components/LogoutButton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { teacher } from "@/lib/mock-data";
 
 export function Topbar({ onMenu }: { onMenu: () => void }) {
   const { theme, toggle } = useTheme();
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-30 glass">
@@ -22,7 +28,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
 
         <div className="relative hidden max-w-md flex-1 md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search students, courses, notices…" className="h-10 rounded-xl bg-background/70 pl-9" />
+          <Input placeholder="Search students, courses…" className="h-10 rounded-xl bg-background/70 pl-9" />
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 md:gap-2">
@@ -44,17 +50,32 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>{teacher.title} {teacher.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/teacher/profile"><User className="mr-2 h-4 w-4" /> My Profile</Link>
+              <DropdownMenuItem onClick={() => navigate({ to: "/teacher/profile" })}>
+                <User className="mr-2 h-4 w-4" /> My Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="text-destructive focus:text-destructive">
-                <LogoutButton className="w-full !px-2 !py-1.5" />
+              <DropdownMenuItem className="text-destructive" onClick={() => setLogoutOpen(true)}>
+                <LogOut className="mr-2 h-4 w-4" /> Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>You'll need to sign in again to access the Teacher Dashboard.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => setLogoutOpen(false)}>
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

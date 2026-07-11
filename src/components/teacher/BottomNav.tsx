@@ -16,7 +16,7 @@ export function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border glass px-2 py-1.5 lg:hidden">
       <ul className="grid grid-cols-5">
         {items.map(({ to, label, icon: Icon }) => {
-          const active = pathname === to || (to !== "/teacher/dashboard" && pathname.startsWith(to));
+          const active = pathname === to || (to !== "/dashboard" && pathname.startsWith(to));
           return (
             <li key={to}>
               <Link to={to} className={cn(

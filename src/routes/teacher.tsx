@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useState } from "react";
-import { Sidebar } from "@/components/teacher/Sidebar";
-import { Topbar } from "@/components/teacher/Topbar";
-import { BottomNav } from "@/components/teacher/BottomNav";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Topbar } from "@/components/layout/Topbar";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 export const Route = createFileRoute("/teacher")({
   component: AppLayout,
