@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
-import Topbar from "@/components/layout/Topbar";
+import Sidebar from "@/components/student-layout/Sidebar";
+import Topbar from "@/components/student-layout/Topbar";
 
 /**
  * DashboardShell — composes the sidebar + topbar around the active page.
