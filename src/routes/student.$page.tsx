@@ -4,7 +4,7 @@ import DashboardShell from "@/components/student-layout/DashboardShell.jsx";
 // @ts-ignore jsx module
 import { studentModule } from "@/features/student/index.js";
 
-export const Route = createFileRoute("/student")({
+export const Route = createFileRoute("/student/$page")({
   component: StudentRoute,
 });
 

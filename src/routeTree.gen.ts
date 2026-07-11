@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TeacherRouteImport } from './routes/teacher'
-import { Route as StudentRouteImport } from './routes/student'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HodRouteImport } from './routes/hod'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -25,6 +24,7 @@ import { Route as TeacherNoticesRouteImport } from './routes/teacher.notices'
 import { Route as TeacherMarksRouteImport } from './routes/teacher.marks'
 import { Route as TeacherDashboardRouteImport } from './routes/teacher.dashboard'
 import { Route as TeacherCoursesRouteImport } from './routes/teacher.courses'
+import { Route as StudentPageRouteImport } from './routes/student.$page'
 import { Route as HodTeachersRouteImport } from './routes/hod.teachers'
 import { Route as HodStudentsRouteImport } from './routes/hod.students'
 import { Route as HodSettingsRouteImport } from './routes/hod.settings'
@@ -54,11 +54,6 @@ const TeacherRoute = TeacherRouteImport.update({
   path: '/teacher',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StudentRoute = StudentRouteImport.update({
-  id: '/student',
-  path: '/student',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -80,9 +75,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudentIndexRoute = StudentIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => StudentRoute,
+  id: '/student/',
+  path: '/student/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const HodIndexRoute = HodIndexRouteImport.update({
   id: '/',
@@ -128,6 +123,11 @@ const TeacherCoursesRoute = TeacherCoursesRouteImport.update({
   id: '/courses',
   path: '/courses',
   getParentRoute: () => TeacherRoute,
+} as any)
+const StudentPageRoute = StudentPageRouteImport.update({
+  id: '/student/$page',
+  path: '/student/$page',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const HodTeachersRoute = HodTeachersRouteImport.update({
   id: '/teachers',
@@ -251,7 +251,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/hod': typeof HodRouteWithChildren
   '/login': typeof LoginRoute
-  '/student': typeof StudentRouteWithChildren
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hods': typeof AdminHodsRoute
@@ -274,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/hod/settings': typeof HodSettingsRoute
   '/hod/students': typeof HodStudentsRoute
   '/hod/teachers': typeof HodTeachersRoute
+  '/student/$page': typeof StudentPageRoute
   '/teacher/courses': typeof TeacherCoursesRoute
   '/teacher/dashboard': typeof TeacherDashboardRoute
   '/teacher/marks': typeof TeacherMarksRoute
@@ -312,6 +312,7 @@ export interface FileRoutesByTo {
   '/hod/settings': typeof HodSettingsRoute
   '/hod/students': typeof HodStudentsRoute
   '/hod/teachers': typeof HodTeachersRoute
+  '/student/$page': typeof StudentPageRoute
   '/teacher/courses': typeof TeacherCoursesRoute
   '/teacher/dashboard': typeof TeacherDashboardRoute
   '/teacher/marks': typeof TeacherMarksRoute
@@ -331,7 +332,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/hod': typeof HodRouteWithChildren
   '/login': typeof LoginRoute
-  '/student': typeof StudentRouteWithChildren
   '/teacher': typeof TeacherRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/hods': typeof AdminHodsRoute
@@ -354,6 +354,7 @@ export interface FileRoutesById {
   '/hod/settings': typeof HodSettingsRoute
   '/hod/students': typeof HodStudentsRoute
   '/hod/teachers': typeof HodTeachersRoute
+  '/student/$page': typeof StudentPageRoute
   '/teacher/courses': typeof TeacherCoursesRoute
   '/teacher/dashboard': typeof TeacherDashboardRoute
   '/teacher/marks': typeof TeacherMarksRoute
@@ -374,7 +375,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hod'
     | '/login'
-    | '/student'
     | '/teacher'
     | '/admin/dashboard'
     | '/admin/hods'
@@ -397,6 +397,7 @@ export interface FileRouteTypes {
     | '/hod/settings'
     | '/hod/students'
     | '/hod/teachers'
+    | '/student/$page'
     | '/teacher/courses'
     | '/teacher/dashboard'
     | '/teacher/marks'
@@ -435,6 +436,7 @@ export interface FileRouteTypes {
     | '/hod/settings'
     | '/hod/students'
     | '/hod/teachers'
+    | '/student/$page'
     | '/teacher/courses'
     | '/teacher/dashboard'
     | '/teacher/marks'
@@ -453,7 +455,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hod'
     | '/login'
-    | '/student'
     | '/teacher'
     | '/admin/dashboard'
     | '/admin/hods'
@@ -476,6 +477,7 @@ export interface FileRouteTypes {
     | '/hod/settings'
     | '/hod/students'
     | '/hod/teachers'
+    | '/student/$page'
     | '/teacher/courses'
     | '/teacher/dashboard'
     | '/teacher/marks'
@@ -495,8 +497,9 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   HodRoute: typeof HodRouteWithChildren
   LoginRoute: typeof LoginRoute
-  StudentRoute: typeof StudentRouteWithChildren
   TeacherRoute: typeof TeacherRouteWithChildren
+  StudentPageRoute: typeof StudentPageRoute
+  StudentIndexRoute: typeof StudentIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -506,13 +509,6 @@ declare module '@tanstack/react-router' {
       path: '/teacher'
       fullPath: '/teacher'
       preLoaderRoute: typeof TeacherRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/student': {
-      id: '/student'
-      path: '/student'
-      fullPath: '/student'
-      preLoaderRoute: typeof StudentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -545,10 +541,10 @@ declare module '@tanstack/react-router' {
     }
     '/student/': {
       id: '/student/'
-      path: '/'
+      path: '/student'
       fullPath: '/student/'
       preLoaderRoute: typeof StudentIndexRouteImport
-      parentRoute: typeof StudentRoute
+      parentRoute: typeof rootRouteImport
     }
     '/hod/': {
       id: '/hod/'
@@ -612,6 +608,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/teacher/courses'
       preLoaderRoute: typeof TeacherCoursesRouteImport
       parentRoute: typeof TeacherRoute
+    }
+    '/student/$page': {
+      id: '/student/$page'
+      path: '/student/$page'
+      fullPath: '/student/$page'
+      preLoaderRoute: typeof StudentPageRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/hod/teachers': {
       id: '/hod/teachers'
@@ -839,17 +842,6 @@ const HodRouteChildren: HodRouteChildren = {
 
 const HodRouteWithChildren = HodRoute._addFileChildren(HodRouteChildren)
 
-interface StudentRouteChildren {
-  StudentIndexRoute: typeof StudentIndexRoute
-}
-
-const StudentRouteChildren: StudentRouteChildren = {
-  StudentIndexRoute: StudentIndexRoute,
-}
-
-const StudentRouteWithChildren =
-  StudentRoute._addFileChildren(StudentRouteChildren)
-
 interface TeacherRouteChildren {
   TeacherCoursesRoute: typeof TeacherCoursesRoute
   TeacherDashboardRoute: typeof TeacherDashboardRoute
@@ -882,8 +874,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   HodRoute: HodRouteWithChildren,
   LoginRoute: LoginRoute,
-  StudentRoute: StudentRouteWithChildren,
   TeacherRoute: TeacherRouteWithChildren,
+  StudentPageRoute: StudentPageRoute,
+  StudentIndexRoute: StudentIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

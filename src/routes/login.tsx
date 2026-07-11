@@ -19,8 +19,8 @@ export const Route = createFileRoute("/login")({
 const ACCOUNTS: Record<string, { role: "admin" | "hod" | "teacher" | "student"; to: string }> = {
   "admin@ssms.edu":   { role: "admin",   to: "/admin/dashboard" },
   "hod@ssms.edu":     { role: "hod",     to: "/hod/dashboard" },
-  "teacher@ssms.edu": { role: "teacher", to: "/dashboard" },
-  "student@ssms.edu": { role: "student", to: "/dashboard" },
+  "teacher@ssms.edu": { role: "teacher", to: "/teacher/dashboard" },
+  "student@ssms.edu": { role: "student", to: "/student/dashboard" },
 };
 
 function LoginPage() {
