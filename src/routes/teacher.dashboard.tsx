@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  BookOpen, Users, Camera, Eye, PenSquare, FileBarChart,
-  CheckCheck, Award, Bell, MessageCircle,
+  BookOpen, Users, Camera, Megaphone, PenSquare, Eye, FileBarChart, ArrowRight,
+  CheckCheck, Award, Bell, FileText, MessageCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/StatCard";
 import { teacher, courses, activities } from "@/lib/mock-data";
 
@@ -12,32 +13,37 @@ export const Route = createFileRoute("/teacher/dashboard")({
   component: Dashboard,
 });
 
-const activityIcons = { check: CheckCheck, award: Award, bell: Bell, message: MessageCircle };
+const activityIcons = { check: CheckCheck, award: Award, bell: Bell, file: FileText, message: MessageCircle };
 
 function Dashboard() {
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-  const totalStudents = courses.reduce((sum, c) => sum + c.enrolled, 0);
+  const totalStudents = courses.reduce((s, c) => s + c.enrolled, 0);
 
   return (
     <div className="space-y-6">
       {/* Welcome */}
       <Card className="relative overflow-hidden rounded-2xl border-0 gradient-brand p-0 text-white shadow-glass">
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(600px 200px at 90% -20%, #fff, transparent 60%)" }} />
-        <div className="relative grid gap-6 p-6 md:p-8">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-widest text-white/80">{today}</div>
-            <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">
-              Welcome back, {teacher.title} {teacher.name.split(" ")[0]} 👋
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-white/80">
-              {teacher.department} · {teacher.semester}.
-            </p>
+        <div className="relative p-6 md:p-8">
+          <div className="text-xs font-medium uppercase tracking-widest text-white/80">{today}</div>
+          <h1 className="mt-1 font-display text-2xl font-bold md:text-3xl">
+            Welcome back, {teacher.title} {teacher.name.split(" ")[0]} 👋
+          </h1>
+          <p className="mt-1.5 max-w-xl text-sm text-white/80">
+            {teacher.department} · {teacher.semester}.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link to="/teacher/attendance">
+              <Button size="sm" variant="secondary" className="rounded-xl bg-white text-primary hover:bg-white/90">
+                <Camera className="mr-1.5 h-4 w-4" /> Take Attendance
+              </Button>
+            </Link>
           </div>
         </div>
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-2 gap-4 md:max-w-md">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard label="Total Courses" value={courses.length} icon={BookOpen} tone="primary" />
         <StatCard label="Total Students" value={totalStudents} icon={Users} tone="accent" />
       </div>
@@ -48,7 +54,7 @@ function Dashboard() {
         <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           {[
             { icon: Camera, label: "Take Attendance", to: "/teacher/attendance" },
-            { icon: Bell, label: "View Notice", to: "/teacher/notices" },
+            { icon: Megaphone, label: "View Notice", to: "/teacher/notices" },
             { icon: PenSquare, label: "Enter Marks", to: "/teacher/marks" },
             { icon: Eye, label: "View Students", to: "/teacher/courses" },
             { icon: FileBarChart, label: "Generate Report", to: "/teacher/reports" },
@@ -58,6 +64,7 @@ function Dashboard() {
                 <a.icon className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 text-sm font-medium">{a.label}</div>
+              <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
             </Link>
           ))}
         </CardContent>

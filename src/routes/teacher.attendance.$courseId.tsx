@@ -7,13 +7,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 import { ArrowLeft, Camera, CameraOff, CheckCircle2, XCircle, Save, ScanFace, MousePointerClick, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { courses, studentsFor } from "@/lib/mock-data";
+import { getCourseByCompositeId, getRosterFor, parseCourseId } from "@/lib/academic-data";
 
 type Status = "present" | "absent" | "pending";
 
@@ -23,10 +20,11 @@ export const Route = createFileRoute("/teacher/attendance/$courseId")({
 });
 
 function TakeAttendance() {
-  const { courseId } = useParams({ from: "/_app/attendance/$courseId" });
-  const course = courses.find((c) => c.id === courseId) ?? courses[0];
+  const { courseId } = useParams({ from: "/teacher/attendance/$courseId" });
+  const { dept, sem, section } = parseCourseId(courseId);
+  const course = getCourseByCompositeId(courseId);
 
-  const classRoster = useMemo(() => studentsFor(course.id, 16), [course.id]);
+  const classRoster = useMemo(() => getRosterFor(dept, sem, section), [dept, sem, section]);
   const [statuses, setStatuses] = useState<Record<string, Status>>(
     () => Object.fromEntries(classRoster.map((s) => [s.id, "pending" as Status])),
   );
@@ -37,7 +35,6 @@ function TakeAttendance() {
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
 
@@ -57,7 +54,7 @@ function TakeAttendance() {
         await videoRef.current.play();
       }
       setCameraOn(true);
-      toast.success("Camera started · Scanning classroom");
+      toast.success("Camera started · AI face recognition active");
       simulateRecognition();
     } catch (err: any) {
       setCameraError(err?.message ?? "Camera not available. Use manual mode.");
@@ -77,13 +74,13 @@ function TakeAttendance() {
     const order = [...classRoster].sort(() => Math.random() - 0.5);
     order.forEach((s, i) => {
       setTimeout(() => {
-        // ~85% get recognized by AI face recognition and are auto-marked present
+        // ~85% get recognized
         if (Math.random() > 0.15) {
           setRecognized((r) => ({ ...r, [s.id]: true }));
           setStatuses((prev) => (prev[s.id] === "pending" ? { ...prev, [s.id]: "present" } : prev));
         }
         if (i === order.length - 1) setScanning(false);
-      }, 500 + i * 300);
+      }, 500 + i * 350);
     });
   }
 
@@ -101,7 +98,12 @@ function TakeAttendance() {
   }
 
   function confirmSave() {
-    // simulate writing to mock database
+    // Manual entry: anything not yet touched defaults to absent, per spec (only Present/Absent allowed).
+    setStatuses((prev) => {
+      const next = { ...prev };
+      classRoster.forEach((s) => { if (next[s.id] === "pending") next[s.id] = "absent"; });
+      return next;
+    });
     setConfirmOpen(false);
     setSuccessOpen(true);
   }
@@ -111,6 +113,15 @@ function TakeAttendance() {
     { present: 0, absent: 0, pending: 0 } as Record<Status, number>,
   );
 
+  if (!course) {
+    return (
+      <div className="space-y-4">
+        <Link to="/teacher/attendance"><Button variant="outline" className="rounded-xl"><ArrowLeft className="mr-1.5 h-4 w-4" />Back to Attendance</Button></Link>
+        <p className="text-sm text-muted-foreground">Course not found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -118,7 +129,7 @@ function TakeAttendance() {
         <div className="flex min-w-0 items-center gap-3">
           <Link to="/teacher/attendance"><Button size="icon" variant="ghost" className="rounded-xl"><ArrowLeft className="h-4 w-4" /></Button></Link>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{course.code}</div>
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{course.code} · {course.dept.toUpperCase()}</div>
             <h1 className="truncate font-display text-xl font-bold sm:text-2xl">{course.name} · Attendance</h1>
           </div>
         </div>
@@ -161,7 +172,7 @@ function TakeAttendance() {
                     <div className="pointer-events-none absolute inset-x-6 top-6 h-0.5 animate-[scan_2s_linear_infinite] bg-emerald-400 shadow-[0_0_12px_2px_rgba(52,211,153,0.8)]" />
                   )}
                   <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" /> {scanning ? "Scanning classroom…" : "Live"}
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" /> Live
                   </div>
                 </>
               )}
@@ -193,7 +204,7 @@ function TakeAttendance() {
 
             <div className="rounded-xl bg-secondary/60 p-3 text-xs">
               <div className="flex items-center gap-1.5 font-semibold"><MousePointerClick className="h-3.5 w-3.5" /> Manual fallback</div>
-              <p className="mt-1 text-muted-foreground">If a student isn't recognized, click their photo to reveal & mark them Present or Absent.</p>
+              <p className="mt-1 text-muted-foreground">Click any student photo to reveal & mark them present. Photos stay blurred until recognized by AI or clicked manually.</p>
             </div>
           </CardContent>
         </Card>
@@ -249,7 +260,7 @@ function TakeAttendance() {
                       <div className="truncate text-[10px] text-muted-foreground">{s.enrollment}</div>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    <div className="mt-2 grid grid-cols-2 gap-1">
                       <StatusBtn active={st === "present"} onClick={() => setStatus(s.id, "present")} tone="success" title="Present"><CheckCircle2 className="h-3.5 w-3.5" /> Present</StatusBtn>
                       <StatusBtn active={st === "absent"} onClick={() => setStatus(s.id, "absent")} tone="danger" title="Absent"><XCircle className="h-3.5 w-3.5" /> Absent</StatusBtn>
                     </div>
@@ -261,41 +272,38 @@ function TakeAttendance() {
         </Card>
       </div>
 
+      <style>{`@keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(220px); } }`}</style>
+
       {/* Save confirmation */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="rounded-2xl">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Save today's attendance?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to save today's attendance for {course.name}? {counts.pending > 0 ? `${counts.pending} student(s) are still pending.` : "You can review it again before it's final."}
+              Are you sure you want to save today's attendance for {course.name}? Any unmarked students will be recorded as absent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">No</AlertDialogCancel>
-            <AlertDialogAction className="rounded-xl" onClick={confirmSave}>Yes</AlertDialogAction>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSave}>Yes</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Success dialog */}
-      <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
-        <DialogContent className="max-w-sm rounded-2xl text-center">
-          <DialogHeader className="items-center">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
-              <PartyPopper className="h-7 w-7" />
-            </div>
-            <DialogTitle>Attendance Saved Successfully</DialogTitle>
-            <DialogDescription>
-              {counts.present} present · {counts.absent} absent recorded for {course.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button className="rounded-xl" onClick={() => setSuccessOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <style>{`@keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(220px); } }`}</style>
+      {/* Success */}
+      <AlertDialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2"><PartyPopper className="h-5 w-5 text-emerald-500" /> Attendance Saved Successfully</AlertDialogTitle>
+            <AlertDialogDescription>
+              Attendance for {course.name} has been saved to the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setSuccessOpen(false)}>Done</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

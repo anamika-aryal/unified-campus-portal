@@ -1,10 +1,14 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   LayoutDashboard, User, BookOpen, ClipboardCheck, GraduationCap,
-  BarChart3, Bell, FileBarChart, X,
+  BarChart3, Bell, FileBarChart, LogOut, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LogoutButton } from "@/components/LogoutButton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const nav = [
   { to: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,12 +17,14 @@ const nav = [
   { to: "/teacher/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/teacher/marks", label: "Internal Marks", icon: GraduationCap },
   { to: "/teacher/performance", label: "Performance", icon: BarChart3 },
-  { to: "/teacher/notices", label: "Notices", icon: Bell },
+  { to: "/teacher/notices", label: "Notice", icon: Bell },
   { to: "/teacher/reports", label: "Reports", icon: FileBarChart },
 ] as const;
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { pathname } = useLocation();
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -70,10 +76,33 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             );
           })}
           <div className="mt-auto pt-2">
-            <LogoutButton className="w-full" />
+            <button
+              onClick={() => setLogoutOpen(true)}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive/90 hover:bg-destructive/10"
+            >
+              <LogOut className="h-[18px] w-[18px]" /> Logout
+            </button>
           </div>
         </nav>
       </aside>
+
+      <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>You'll need to sign in again to access the Teacher Dashboard.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setLogoutOpen(false); navigate({ to: "/login" }); }}
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

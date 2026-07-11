@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
-import { FileBarChart, Download, FileSpreadsheet, CheckCircle2, Loader2 } from "lucide-react";
-import { coursesFor, studentsFor, internalTotal, defaultMarksEntry, TOTAL_INTERNAL_MAX, type Course } from "@/lib/mock-data";
-import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
+  AlertDialog, AlertDialogAction, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, FileBarChart, Download, FileSpreadsheet, PartyPopper } from "lucide-react";
+import { getAssignedCourses, getRosterFor, deptName, sectionLabel } from "@/lib/academic-data";
+import { DepartmentPicker, SemesterPicker, SectionPicker, DrillBreadcrumb, type DrillState } from "@/components/DrillNav";
 
 export const Route = createFileRoute("/teacher/reports")({
   head: () => ({ meta: [{ title: "Reports · Teacher Portal" }] }),
@@ -15,139 +17,129 @@ export const Route = createFileRoute("/teacher/reports")({
 });
 
 function ReportsPage() {
-  const [drill, setDrill] = useState<DrillState>({ dept: null, sem: null, section: null });
-  const [course, setCourse] = useState<Course | null>(null);
-
-  const done = drill.dept && drill.sem !== null && drill.section;
-  const assigned = done ? coursesFor(drill.dept!, drill.sem!, drill.section!) : [];
-
-  if (course) {
-    return <ReportScreen course={course} onBack={() => setCourse(null)} />;
-  }
+  const [state, setState] = useState<DrillState>({});
+  const [courseId, setCourseId] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Reports</h1>
-        <p className="text-sm text-muted-foreground">Select a department, semester and section, then a course to generate its internal marks report.</p>
+        <p className="text-sm text-muted-foreground">Select a department, semester, section and course to generate its internal marks report.</p>
       </div>
 
-      <DrillDown value={drill} onChange={setDrill} />
-
-      {done && (
+      {!courseId && (
         <>
-          <BackToDrillDown label="Change Section" onClick={() => setDrill((d) => ({ ...d, section: null }))} />
-          {assigned.length === 0 ? (
-            <Card className="rounded-2xl p-8 text-center shadow-soft">
-              <p className="text-sm text-muted-foreground">No courses assigned to this section.</p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {assigned.map((c) => (
-                <Card key={c.id} className="rounded-2xl shadow-soft transition hover:-translate-y-1 hover:shadow-glass">
-                  <CardHeader className="flex flex-row items-start gap-3 space-y-0">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl gradient-brand text-white"><FileBarChart className="h-5 w-5" /></div>
-                    <div className="min-w-0">
-                      <CardTitle className="text-base">{c.name}</CardTitle>
-                      <p className="mt-1 text-xs text-muted-foreground">{c.code} · Internal Marks Report</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Button className="w-full rounded-xl" onClick={() => setCourse(c)}>Generate Report</Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          <DrillBreadcrumb state={state} onNavigate={setState} />
+          {!state.dept && <DepartmentPicker onSelect={(dept) => setState({ dept })} />}
+          {state.dept && !state.sem && <SemesterPicker onSelect={(sem) => setState({ dept: state.dept, sem })} />}
+          {state.dept && state.sem && !state.section && (
+            <SectionPicker onSelect={(section) => setState({ ...state, section })} />
+          )}
+          {state.dept && state.sem && state.section && (
+            <CourseList dept={state.dept} sem={state.sem} section={state.section} onSelect={setCourseId} />
           )}
         </>
       )}
+
+      {courseId && <InternalMarksReport courseId={courseId} onBack={() => setCourseId(null)} />}
     </div>
   );
 }
 
-function ReportScreen({ course, onBack }: { course: Course; onBack: () => void }) {
-  const roster = useMemo(
-    () => studentsFor(course.id, 12).map((s) => ({ ...s, marksEntry: defaultMarksEntry() })),
-    [course.id],
+function CourseList({ dept, sem, section, onSelect }: { dept: string; sem: number; section: string; onSelect: (id: string) => void }) {
+  const list = getAssignedCourses(dept, sem, section);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary" className="rounded-full">{deptName(dept)}</Badge>
+        <Badge variant="secondary" className="rounded-full">Semester {sem}</Badge>
+        <Badge variant="secondary" className="rounded-full">Section {sectionLabel(section)}</Badge>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {list.map((c) => (
+          <Card
+            key={c.id}
+            onClick={() => onSelect(c.id)}
+            className="group cursor-pointer overflow-hidden rounded-2xl border-border/60 p-0 shadow-soft transition hover:-translate-y-1 hover:shadow-glass"
+          >
+            <div className="gradient-brand relative h-20 p-4 text-white">
+              <div className="text-[10px] uppercase tracking-widest opacity-80">{c.code}</div>
+              <div className="mt-1 font-display text-base font-bold">{c.name}</div>
+            </div>
+            <CardContent className="flex items-center justify-between p-4 text-sm">
+              <span className="text-xs text-muted-foreground">{c.enrolled} students</span>
+              <span className="text-xs font-medium text-primary">Generate report →</span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
+}
 
-  const [generating, setGenerating] = useState<"excel" | "pdf" | null>(null);
-  const [successFormat, setSuccessFormat] = useState<"excel" | "pdf" | null>(null);
+function InternalMarksReport({ courseId, onBack }: { courseId: string; onBack: () => void }) {
+  const [dept, semStr, section] = courseId.split("-");
+  const sem = Number(semStr);
+  const course = getAssignedCourses(dept, sem, section).find((c) => c.id === courseId);
+  const roster = useMemo(() => getRosterFor(dept, sem, section), [dept, sem, section]);
 
-  function download(format: "excel" | "pdf") {
-    setGenerating(format);
-    setTimeout(() => {
-      setGenerating(null);
-      setSuccessFormat(format);
-    }, 1000);
-  }
+  const [generated, setGenerated] = useState(false);
+  const [successKind, setSuccessKind] = useState<"excel" | "pdf" | null>(null);
+
+  if (!course) return <p className="text-sm text-muted-foreground">Course not found.</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <BackToDrillDown label="Back" onClick={onBack} />
-          <div>
-            <h1 className="font-display text-2xl font-bold">{course.name} · Internal Marks Report</h1>
-            <p className="text-sm text-muted-foreground">{course.code} · Semester {course.sem} · Section {course.section}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="rounded-xl" disabled={!!generating} onClick={() => download("excel")}>
-            {generating === "excel" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1.5 h-4 w-4" />}
-            Download Excel
-          </Button>
-          <Button className="rounded-xl" disabled={!!generating} onClick={() => download("pdf")}>
-            {generating === "pdf" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-            Download PDF
-          </Button>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Button size="icon" variant="ghost" className="rounded-xl" onClick={onBack}><ArrowLeft className="h-4 w-4" /></Button>
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{course.code}</div>
+          <h2 className="font-display text-xl font-bold">{course.name} · Internal Marks Report</h2>
         </div>
       </div>
 
       <Card className="rounded-2xl shadow-soft">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Internal Marks Summary /{TOTAL_INTERNAL_MAX}</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary/60 text-xs uppercase tracking-wider text-muted-foreground">
-                <tr className="[&>th]:px-4 [&>th]:py-3 [&>th]:text-left">
-                  <th>Student</th><th>Enrollment</th><th>Total /{TOTAL_INTERNAL_MAX}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {roster.map((s) => (
-                  <tr key={s.id} className="[&>td]:px-4 [&>td]:py-2.5">
-                    <td className="font-medium">{s.name}</td>
-                    <td className="text-muted-foreground">{s.enrollment}</td>
-                    <td>
-                      <span className="rounded-lg bg-primary/10 px-3 py-1 font-mono text-sm font-bold text-primary">
-                        {internalTotal(s.marksEntry).toFixed(1)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <CardHeader className="flex flex-row items-start gap-3 space-y-0">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl gradient-brand text-white"><FileBarChart className="h-5 w-5" /></div>
+          <div className="min-w-0">
+            <CardTitle className="text-base">Internal Marks Report</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">{roster.length} students · {course.code} · {deptName(dept)}</p>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!generated ? (
+            <Button className="rounded-xl" onClick={() => setGenerated(true)}>
+              <FileBarChart className="mr-1.5 h-4 w-4" />Generate Report
+            </Button>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="rounded-xl" onClick={() => setSuccessKind("excel")}>
+                <FileSpreadsheet className="mr-1.5 h-4 w-4" />Download Excel
+              </Button>
+              <Button variant="outline" className="rounded-xl" onClick={() => setSuccessKind("pdf")}>
+                <Download className="mr-1.5 h-4 w-4" />Download PDF
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Dialog open={!!successFormat} onOpenChange={(v) => !v && setSuccessFormat(null)}>
-        <DialogContent className="max-w-sm rounded-2xl text-center">
-          <DialogHeader className="items-center">
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <DialogTitle>{successFormat === "excel" ? "Excel file generated" : "PDF generated"}</DialogTitle>
-            <DialogDescription>
-              The internal marks report for {course.name} has been downloaded as a {successFormat === "excel" ? ".xlsx" : "PDF"} file.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button className="rounded-xl" onClick={() => setSuccessFormat(null)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={!!successKind} onOpenChange={(v) => !v && setSuccessKind(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PartyPopper className="h-5 w-5 text-emerald-500" />
+              {successKind === "excel" ? "Excel report generated" : "PDF report generated"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {course.name} internal marks report has been downloaded as {successKind === "excel" ? ".xlsx" : ".pdf"}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setSuccessKind(null)}>Done</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

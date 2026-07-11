@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, ArrowRight } from "lucide-react";
-import { coursesFor } from "@/lib/mock-data";
-import { DrillDown, BackToDrillDown, type DrillState } from "@/components/DrillDown";
+import { getAssignedCourses, deptName, sectionLabel } from "@/lib/academic-data";
+import { DepartmentPicker, SemesterPicker, SectionPicker, DrillBreadcrumb, type DrillState } from "@/components/DrillNav";
 
 export const Route = createFileRoute("/teacher/attendance/")({
   head: () => ({ meta: [{ title: "Attendance · Teacher Portal" }] }),
@@ -13,57 +13,63 @@ export const Route = createFileRoute("/teacher/attendance/")({
 });
 
 function AttendanceIndex() {
-  const [drill, setDrill] = useState<DrillState>({ dept: null, sem: null, section: null });
-  const done = drill.dept && drill.sem !== null && drill.section;
-  const assigned = done ? coursesFor(drill.dept!, drill.sem!, drill.section!) : [];
+  const [state, setState] = useState<DrillState>({});
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Attendance Management</h1>
-        <p className="text-sm text-muted-foreground">Select a department, semester and section to take attendance with AI face recognition.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Attendance Management</h1>
+          <p className="text-sm text-muted-foreground">Select a department, semester and section to begin taking attendance.</p>
+        </div>
       </div>
 
-      <DrillDown value={drill} onChange={setDrill} />
+      <DrillBreadcrumb state={state} onNavigate={setState} />
 
-      {done && (
-        <>
-          <BackToDrillDown label="Change Section" onClick={() => setDrill((d) => ({ ...d, section: null }))} />
-
-          {assigned.length === 0 ? (
-            <Card className="rounded-2xl p-8 text-center shadow-soft">
-              <p className="text-sm text-muted-foreground">No courses assigned to this section.</p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {assigned.map((c) => (
-                <Card key={c.id} className="group rounded-2xl border-border/60 shadow-soft transition hover:-translate-y-1 hover:shadow-glass">
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{c.code}</div>
-                      <CardTitle className="mt-1 truncate text-base">{c.name}</CardTitle>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">{c.enrolled}</Badge>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between rounded-xl bg-secondary/60 p-3 text-xs">
-                      <div><div className="text-muted-foreground">Credits</div><div className="font-semibold">{c.credits}</div></div>
-                      <div><div className="text-muted-foreground">Students</div><div className="font-semibold">{c.enrolled}</div></div>
-                      <div><div className="text-muted-foreground">Att %</div><div className="font-semibold text-primary">{c.attendance}%</div></div>
-                    </div>
-                    <Link to="/teacher/attendance/$courseId" params={{ courseId: c.id }}>
-                      <Button className="w-full rounded-xl">
-                        <Camera className="mr-2 h-4 w-4" /> Take Attendance
-                        <ArrowRight className="ml-auto h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
+      {!state.dept && <DepartmentPicker onSelect={(dept) => setState({ dept })} />}
+      {state.dept && !state.sem && <SemesterPicker onSelect={(sem) => setState({ dept: state.dept, sem })} />}
+      {state.dept && state.sem && !state.section && (
+        <SectionPicker onSelect={(section) => setState({ ...state, section })} />
       )}
+      {state.dept && state.sem && state.section && (
+        <AssignedCourses dept={state.dept} sem={state.sem} section={state.section} />
+      )}
+    </div>
+  );
+}
+
+function AssignedCourses({ dept, sem, section }: { dept: string; sem: number; section: string }) {
+  const list = getAssignedCourses(dept, sem, section);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="secondary" className="rounded-full">{deptName(dept)}</Badge>
+        <Badge variant="secondary" className="rounded-full">Semester {sem}</Badge>
+        <Badge variant="secondary" className="rounded-full">Section {sectionLabel(section)}</Badge>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {list.map((c) => (
+          <Card key={c.id} className="group rounded-2xl border-border/60 shadow-soft transition hover:-translate-y-1 hover:shadow-glass">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{c.code}</div>
+                <CardTitle className="mt-1 truncate text-base">{c.name}</CardTitle>
+              </div>
+              <Badge variant="secondary" className="rounded-full">{c.enrolled}</Badge>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Link to="/teacher/attendance/$courseId" params={{ courseId: c.id }}>
+                <Button className="w-full rounded-xl">
+                  <Camera className="mr-2 h-4 w-4" /> Take Attendance
+                  <ArrowRight className="ml-auto h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
